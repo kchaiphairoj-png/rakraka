@@ -3,6 +3,7 @@ import type { PricingInputs } from '../lib/pricing'
 interface CalculatorProps {
   inputs: PricingInputs
   onChange: (inputs: PricingInputs) => void
+  onReset: () => void
 }
 
 interface FieldConfig {
@@ -127,7 +128,7 @@ const PLATFORM_PRESETS = [
   { label: 'LINE OA', fee: 0 },
 ]
 
-export function Calculator({ inputs, onChange }: CalculatorProps) {
+export function Calculator({ inputs, onChange, onReset }: CalculatorProps) {
   const handleChange = (key: keyof PricingInputs, value: string | number) => {
     onChange({ ...inputs, [key]: value })
   }
@@ -264,21 +265,8 @@ export function Calculator({ inputs, onChange }: CalculatorProps) {
         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
           <button
             className="btn-ghost"
-            onClick={() =>
-              onChange({
-                productName: '',
-                price: 350,
-                productCost: 150,
-                packagingCost: 15,
-                shippingSubsidy: 40,
-                platformFeePercent: 5,
-                adCost: 20,
-                discount: 0,
-                affiliatePercent: 0,
-                returnRatePercent: 2,
-                targetMarginPercent: 25,
-              })
-            }
+            onClick={onReset}
+            data-testid="reset-btn"
             style={{ width: '100%', padding: '10px 16px', color: '#78716c' }}
           >
             ↺ รีเซ็ตค่าทั้งหมด

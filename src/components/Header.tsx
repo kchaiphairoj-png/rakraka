@@ -4,8 +4,6 @@ import { Logo } from './Logo'
 interface HeaderProps {
   activeSection: string
   onNavigate: (section: string) => void
-  darkMode: boolean
-  onToggleDark: () => void
 }
 
 const NAV_ITEMS = [
@@ -16,7 +14,7 @@ const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard' },
 ]
 
-export function Header({ activeSection, onNavigate, darkMode, onToggleDark }: HeaderProps) {
+export function Header({ activeSection, onNavigate }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleNav = (id: string) => {
@@ -92,27 +90,6 @@ export function Header({ activeSection, onNavigate, darkMode, onToggleDark }: He
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Dark mode toggle */}
-          <button
-            onClick={onToggleDark}
-            title={darkMode ? 'Light mode' : 'Dark mode'}
-            style={{
-              background: 'rgba(0,0,0,0.05)',
-              border: 'none',
-              borderRadius: 8,
-              width: 36,
-              height: 36,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: 16,
-              transition: 'background 0.15s',
-            }}
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-
           <button
             className="btn-primary"
             onClick={() => handleNav('calculator')}

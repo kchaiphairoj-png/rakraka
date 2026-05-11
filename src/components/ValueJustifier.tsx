@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { generateValueMessages } from '../lib/pricing'
 import type { PricingInputs, PricingResults, ValueMessage } from '../lib/pricing'
 
 interface ValueJustifierProps {
   inputs: PricingInputs
   results: PricingResults
+  resetSignal: number
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -80,7 +81,7 @@ function MessageCard({ msg, index }: { msg: ValueMessage; index: number }) {
   )
 }
 
-export function ValueJustifier({ inputs, results }: ValueJustifierProps) {
+export function ValueJustifier({ inputs, results, resetSignal }: ValueJustifierProps) {
   const [messages, setMessages] = useState<ValueMessage[] | null>(null)
   const [generated, setGenerated] = useState(false)
 
@@ -89,6 +90,21 @@ export function ValueJustifier({ inputs, results }: ValueJustifierProps) {
     setMessages(msgs)
     setGenerated(true)
   }
+
+  // Auto-regenerate messages when inputs change after first generation
+  useEffect(() => {
+    if (generated) {
+      setMessages(generateValueMessages(inputs, results))
+    }
+  }, [inputs, results, generated])
+
+  // Reset on parent reset
+  useEffect(() => {
+    if (resetSignal > 0) {
+      setMessages(null)
+      setGenerated(false)
+    }
+  }, [resetSignal])
 
   const productName = inputs.productName || 'สินค้าของคุณ'
 

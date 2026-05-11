@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { simulatePromotion } from '../lib/pricing'
 import type { PricingInputs, PricingResults, PromotionResult } from '../lib/pricing'
 
 interface PromotionSimulatorProps {
   inputs: PricingInputs
   baseResults: PricingResults
+  resetSignal: number
 }
 
 const PROMOS = [
@@ -118,9 +119,24 @@ function PromoResult({ result, base }: { result: PromotionResult; base: PricingR
   )
 }
 
-export function PromotionSimulator({ inputs, baseResults }: PromotionSimulatorProps) {
+export function PromotionSimulator({ inputs, baseResults, resetSignal }: PromotionSimulatorProps) {
   const [selectedPromo, setSelectedPromo] = useState<string | null>(null)
   const [promoResult, setPromoResult] = useState<PromotionResult | null>(null)
+
+  // Auto-recalculate when inputs/baseResults change (if a promo is selected)
+  useEffect(() => {
+    if (selectedPromo) {
+      setPromoResult(simulatePromotion(baseResults, inputs, selectedPromo))
+    }
+  }, [inputs, baseResults, selectedPromo])
+
+  // Reset selection when parent resets
+  useEffect(() => {
+    if (resetSignal > 0) {
+      setSelectedPromo(null)
+      setPromoResult(null)
+    }
+  }, [resetSignal])
 
   const runPromo = (promoId: string) => {
     if (selectedPromo === promoId) {

@@ -16,18 +16,22 @@ export default function App() {
   const [inputs, setInputs] = useState<PricingInputs>(DEFAULT_INPUTS)
   const [results, setResults] = useState<PricingResults>(() => calculate(DEFAULT_INPUTS))
   const [activeSection, setActiveSection] = useState('hero')
-  const [darkMode, setDarkMode] = useState(false)
+  const [resetSignal, setResetSignal] = useState(0)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     setResults(calculate(inputs))
   }, [inputs])
 
-  useEffect(() => {
-    document.body.style.background = darkMode ? '#111827' : '#f7f6f3'
-  }, [darkMode])
-
   const handleInputChange = useCallback((newInputs: PricingInputs) => {
     setInputs(newInputs)
+  }, [])
+
+  const handleReset = useCallback(() => {
+    setInputs(DEFAULT_INPUTS)
+    setResetSignal((n) => n + 1)
+    setToast('รีเซ็ตข้อมูลทั้งหมดเรียบร้อย')
+    setTimeout(() => setToast(null), 2200)
   }, [])
 
   const scrollToSection = (id: string) => {
@@ -66,16 +70,13 @@ export default function App() {
       data-testid="app"
       style={{
         minHeight: '100vh',
-        background: darkMode ? '#111827' : '#f7f6f3',
-        transition: 'background 0.3s',
-        color: darkMode ? '#f9fafb' : '#1c1917',
+        background: '#f7f6f3',
+        color: '#1c1917',
       }}
     >
       <Header
         activeSection={activeSection}
         onNavigate={scrollToSection}
-        darkMode={darkMode}
-        onToggleDark={() => setDarkMode((d) => !d)}
       />
 
       <main>
@@ -88,7 +89,7 @@ export default function App() {
         <Features onStart={() => scrollToSection('calculator')} />
 
         {/* Calculator + Results layout */}
-        <div style={{ background: darkMode ? '#1f2937' : '#f7f6f3' }}>
+        <div style={{ background: '#f7f6f3' }}>
           <div
             style={{
               maxWidth: 1200,
@@ -101,7 +102,7 @@ export default function App() {
             }}
             className="calc-grid"
           >
-            <Calculator inputs={inputs} onChange={handleInputChange} />
+            <Calculator inputs={inputs} onChange={handleInputChange} onReset={handleReset} />
             <div
               id="results"
               style={{ position: 'sticky', top: 80, paddingTop: 80, paddingBottom: 80 }}
@@ -125,15 +126,47 @@ export default function App() {
           </div>
         </div>
 
-        <PromotionSimulator inputs={inputs} baseResults={results} />
-        <PriceWarSimulator inputs={inputs} />
-        <ValueJustifier inputs={inputs} results={results} />
+        <PromotionSimulator inputs={inputs} baseResults={results} resetSignal={resetSignal} />
+        <PriceWarSimulator inputs={inputs} resetSignal={resetSignal} />
+        <ValueJustifier inputs={inputs} results={results} resetSignal={resetSignal} />
         <DashboardSummary results={results} inputs={inputs} />
       </main>
 
       <Footer />
 
+      {/* Toast notification */}
+      {toast && (
+        <div
+          role="status"
+          data-testid="toast"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#0d4f4f',
+            color: '#ffffff',
+            padding: '12px 22px',
+            borderRadius: 999,
+            fontSize: 14,
+            fontWeight: 600,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            animation: 'toastIn 0.3s ease',
+          }}
+        >
+          <span style={{ fontSize: 16 }}>✓</span> {toast}
+        </div>
+      )}
+
       <style>{`
+        @keyframes toastIn {
+          from { opacity: 0; transform: translate(-50%, 16px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
         @media (max-width: 900px) {
           .calc-grid {
             grid-template-columns: 1fr !important;

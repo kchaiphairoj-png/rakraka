@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { simulatePriceWar } from '../lib/pricing'
 import type { PricingInputs, PriceWarResult } from '../lib/pricing'
 
 interface PriceWarSimulatorProps {
   inputs: PricingInputs
+  resetSignal: number
 }
 
 const RECOMMENDATION_CONFIG = {
@@ -161,16 +162,33 @@ function ResultCard({ result, myPrice, competitorPrice }: {
   )
 }
 
-export function PriceWarSimulator({ inputs }: PriceWarSimulatorProps) {
-  const [competitorPrice, setCompetitorPrice] = useState<number>(inputs.price * 0.85)
-  const [result, setResult] = useState<PriceWarResult | null>(null)
-  const [analyzed, setAnalyzed] = useState(false)
+export function PriceWarSimulator({ inputs, resetSignal }: PriceWarSimulatorProps) {
+  const [competitorPrice, setCompetitorPrice] = useState<number>(
+    Math.round(inputs.price * 0.85)
+  )
 
-  const handleAnalyze = () => {
-    const r = simulatePriceWar(inputs, competitorPrice)
-    setResult(r)
-    setAnalyzed(true)
-  }
+  // Keep competitor price in sync if user hasn't manually changed it recently
+  const [touched, setTouched] = useState(false)
+  useEffect(() => {
+    if (!touched) {
+      setCompetitorPrice(Math.round(inputs.price * 0.85))
+    }
+  }, [inputs.price, touched])
+
+  // Reset on parent reset
+  useEffect(() => {
+    if (resetSignal > 0) {
+      setTouched(false)
+      setCompetitorPrice(Math.round(inputs.price * 0.85))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetSignal])
+
+  // Auto-calculate result in real-time
+  const result = useMemo(
+    () => (competitorPrice > 0 ? simulatePriceWar(inputs, competitorPrice) : null),
+    [inputs, competitorPrice]
+  )
 
   const gap = inputs.price - competitorPrice
   const gapPct = inputs.price > 0 ? ((gap / inputs.price) * 100).toFixed(1) : '0'
@@ -238,7 +256,7 @@ export function PriceWarSimulator({ inputs }: PriceWarSimulatorProps) {
                   value={competitorPrice}
                   onChange={(e) => {
                     setCompetitorPrice(parseFloat(e.target.value) || 0)
-                    setAnalyzed(false)
+                    setTouched(true)
                   }}
                   min={0}
                   step={1}
@@ -267,7 +285,7 @@ export function PriceWarSimulator({ inputs }: PriceWarSimulatorProps) {
                 className="btn-ghost"
                 onClick={() => {
                   setCompetitorPrice(Math.round(inputs.price * (1 - pct / 100)))
-                  setAnalyzed(false)
+                  setTouched(true)
                 }}
                 style={{ fontSize: 13 }}
               >
@@ -276,17 +294,22 @@ export function PriceWarSimulator({ inputs }: PriceWarSimulatorProps) {
             ))}
           </div>
 
-          <button
-            className="btn-primary"
-            onClick={handleAnalyze}
-            style={{ width: '100%', fontSize: 16, padding: '14px' }}
-            data-testid="analyze-pricewar-btn"
+          <div
+            style={{
+              padding: '10px 14px',
+              background: '#f0fafa',
+              borderRadius: 8,
+              fontSize: 13,
+              color: '#0d4f4f',
+              textAlign: 'center',
+              border: '1px dashed #b2e8e8',
+            }}
           >
-            วิเคราะห์สงครามราคา →
-          </button>
+            ⚡ ผลลัพธ์อัปเดตอัตโนมัติเมื่อเปลี่ยนราคา
+          </div>
         </div>
 
-        {result && analyzed && (
+        {result && (
           <ResultCard result={result} myPrice={inputs.price} competitorPrice={competitorPrice} />
         )}
       </div>
