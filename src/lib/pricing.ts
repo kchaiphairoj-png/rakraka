@@ -377,3 +377,178 @@ export function generateValueMessages(
 
   return messages
 }
+
+// ============================================================
+// Selling Price Optimizer — Psychological Pricing
+// ============================================================
+
+export type PricingStrategy = 'charm' | 'round' | 'threshold' | 'lucky' | 'bundle'
+
+export interface SellingPriceSuggestion {
+  strategy: PricingStrategy
+  label: string
+  badge: string
+  icon: string
+  price: number
+  profit: number
+  margin: number
+  status: ProfitStatus
+  statusLabel: string
+  psychology: string
+  whyItWorks: string
+  bestFor: string
+  highlight: boolean
+}
+
+function findCharmPrice(target: number): number {
+  if (target <= 0) return 9
+  if (target < 50) {
+    const rounded = Math.max(10, Math.round(target / 10) * 10)
+    return rounded - 1
+  }
+  if (target < 200) {
+    const rounded = Math.round(target / 10) * 10
+    return Math.max(19, rounded - 1)
+  }
+  if (target < 2000) {
+    const rounded = Math.round(target / 100) * 100
+    return Math.max(99, rounded - 1)
+  }
+  // For ≥ 2000, use x999
+  const rounded = Math.round(target / 1000) * 1000
+  return rounded - 1
+}
+
+function findRoundPrice(target: number): number {
+  if (target <= 0) return 50
+  if (target < 100) return Math.max(50, Math.round(target / 10) * 10)
+  if (target < 500) return Math.round(target / 50) * 50
+  if (target < 1500) return Math.round(target / 100) * 100
+  if (target < 5000) return Math.round(target / 500) * 500
+  return Math.round(target / 1000) * 1000
+}
+
+function findThresholdPrice(target: number): number {
+  const thresholds = [50, 99, 149, 199, 299, 399, 499, 699, 999, 1499, 1999, 2999, 4999, 9999]
+  for (const t of thresholds) {
+    if (t >= target * 0.85 && t <= target * 1.05) return t
+  }
+  // Otherwise find closest threshold within range
+  let closest = thresholds[0]
+  let minDiff = Math.abs(target - closest)
+  for (const t of thresholds) {
+    const diff = Math.abs(target - t)
+    if (diff < minDiff) {
+      closest = t
+      minDiff = diff
+    }
+  }
+  return closest
+}
+
+function findLuckyPrice(target: number): number {
+  if (target <= 0) return 9
+  // End in 9 (Thai lucky number for sales). Add a small premium (~3-7%)
+  const bumped = target * 1.05
+  if (bumped < 100) {
+    const tens = Math.round(bumped / 10) * 10
+    return tens + 9
+  }
+  if (bumped < 1000) {
+    const hundreds = Math.round(bumped / 100) * 100
+    return hundreds + 89
+  }
+  const thousands = Math.round(bumped / 1000) * 1000
+  return thousands + 899
+}
+
+function findBundlePrice(target: number): number {
+  // 2-unit bundle with ~10% off per unit appearance
+  const raw = target * 1.85
+  return findCharmPrice(raw)
+}
+
+function calculateAtPrice(inputs: PricingInputs, price: number): {
+  profit: number
+  margin: number
+  status: ProfitStatus
+  statusLabel: string
+} {
+  const r = calculate({ ...inputs, price })
+  return { profit: r.profit, margin: r.margin, status: r.status, statusLabel: r.statusLabel }
+}
+
+export function generateSellingPrices(inputs: PricingInputs): SellingPriceSuggestion[] {
+  const target = inputs.price > 0 ? inputs.price : 350
+
+  const charm = findCharmPrice(target)
+  const round = findRoundPrice(target)
+  const threshold = findThresholdPrice(target)
+  const lucky = findLuckyPrice(target)
+  const bundle = findBundlePrice(target)
+
+  const suggestions: SellingPriceSuggestion[] = [
+    {
+      strategy: 'charm',
+      label: 'ราคาดึงดูด',
+      badge: 'ขายดีที่สุด',
+      icon: '🪝',
+      price: charm,
+      ...calculateAtPrice(inputs, charm),
+      psychology: 'Charm Pricing — ราคาลงท้ายด้วยเลข 9',
+      whyItWorks: `ลูกค้ามองข้ามหลักหน่วยอัตโนมัติ — ฿${charm} รู้สึกเหมือน "฿${Math.floor(charm / 100) * 100}+" ไม่ใช่ "฿${Math.ceil(charm / 100) * 100}" งานวิจัยแสดงว่าราคาลงท้าย 9 ขายดีกว่า 24%`,
+      bestFor: 'สินค้า mass market, marketplace, ของกินของใช้',
+      highlight: true,
+    },
+    {
+      strategy: 'threshold',
+      label: 'ใต้จุดต้านทาน',
+      badge: 'จิตวิทยาแรง',
+      icon: '🎯',
+      price: threshold,
+      ...calculateAtPrice(inputs, threshold),
+      psychology: 'Below-Threshold — หลบเส้นจิตวิทยาราคา',
+      whyItWorks: `฿${threshold} อยู่ใต้เส้น "ราคาเกิน ${Math.ceil((threshold + 1) / 100) * 100}" ที่ลูกค้าตั้งไว้ในใจ ทำให้ตัดสินใจซื้อง่ายขึ้นมาก เหมาะใส่ใน ads ที่ต้อง catch attention`,
+      bestFor: 'สินค้า impulse buy, ads campaign, flash sale',
+      highlight: false,
+    },
+    {
+      strategy: 'round',
+      label: 'ราคาพรีเมียม',
+      badge: 'พรีเมียม',
+      icon: '👑',
+      price: round,
+      ...calculateAtPrice(inputs, round),
+      psychology: 'Round Pricing — เลขกลม สื่อคุณภาพ',
+      whyItWorks: `฿${round} ดูสะอาด มั่นใจ ไม่ "พยายามขาย" เหมาะกับแบรนด์ที่ต้องการสื่อคุณภาพ ลูกค้าระดับกลาง-บนชอบราคาแบบนี้มากกว่า`,
+      bestFor: 'แบรนด์พรีเมียม, สินค้าคุณภาพสูง, ของขวัญ',
+      highlight: false,
+    },
+    {
+      strategy: 'lucky',
+      label: 'เลขมงคลไทย',
+      badge: 'นำโชค',
+      icon: '🍀',
+      price: lucky,
+      ...calculateAtPrice(inputs, lucky),
+      psychology: 'Lucky Number — ลงท้าย 9 (ก้าวหน้า)',
+      whyItWorks: `฿${lucky} ลงท้ายด้วย 9 ที่คนไทยถือว่าเป็นเลขมงคล (สื่อความก้าวหน้า) เหมาะกับสินค้าที่กลุ่มเป้าหมายเชื่อเรื่องเลข เช่น เครื่องประดับ ของฝาก ของมงคล`,
+      bestFor: 'สินค้ามงคล, ของฝาก, ตลาดผู้ใหญ่',
+      highlight: false,
+    },
+    {
+      strategy: 'bundle',
+      label: 'ราคา Bundle 2 ชิ้น',
+      badge: 'เพิ่ม AOV',
+      icon: '📦',
+      price: bundle,
+      ...calculateAtPrice({ ...inputs, productCost: inputs.productCost * 2, packagingCost: inputs.packagingCost * 1.5 }, bundle),
+      psychology: 'Bundle Pricing — ขายเป็นแพ็ก',
+      whyItWorks: `ขายชุด 2 ชิ้นที่ ฿${bundle} ทำให้ดูคุ้มต่อชิ้น (฿${Math.round(bundle / 2)}/ชิ้น) ลูกค้าซื้อมากขึ้น = ลดต้นทุนค่าส่ง+ค่าแอดต่อหน่วย กำไรรวมต่อ order สูงกว่าขายชิ้นเดียว`,
+      bestFor: 'สินค้าใช้หมดได้, ของใช้ประจำวัน, ขายส่ง',
+      highlight: false,
+    },
+  ]
+
+  return suggestions
+}

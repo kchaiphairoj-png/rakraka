@@ -8,6 +8,7 @@ interface HeaderProps {
 
 const NAV_ITEMS = [
   { id: 'calculator', label: 'เครื่องคำนวณ' },
+  { id: 'selling-price', label: 'ตั้งราคาให้ขายดี' },
   { id: 'promotion', label: 'โปรโมชัน' },
   { id: 'pricewar', label: 'สงครามราคา' },
   { id: 'justifier', label: 'Value Justifier' },

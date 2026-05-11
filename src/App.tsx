@@ -4,6 +4,7 @@ import { Hero } from './components/Hero'
 import { Features } from './components/Features'
 import { Calculator } from './components/Calculator'
 import { ResultsPanel } from './components/ResultsPanel'
+import { SellingPriceOptimizer } from './components/SellingPriceOptimizer'
 import { PromotionSimulator } from './components/PromotionSimulator'
 import { PriceWarSimulator } from './components/PriceWarSimulator'
 import { ValueJustifier } from './components/ValueJustifier'
@@ -56,7 +57,7 @@ export default function App() {
       { threshold: 0.25, rootMargin: '-72px 0px 0px 0px' }
     )
 
-    const sections = ['hero', 'features', 'calculator', 'promotion', 'pricewar', 'justifier', 'dashboard']
+    const sections = ['hero', 'features', 'calculator', 'selling-price', 'promotion', 'pricewar', 'justifier', 'dashboard']
     sections.forEach((id) => {
       const el = document.getElementById(id)
       if (el) observer.observe(el)
@@ -126,6 +127,7 @@ export default function App() {
           </div>
         </div>
 
+        <SellingPriceOptimizer inputs={inputs} onChange={handleInputChange} />
         <PromotionSimulator inputs={inputs} baseResults={results} resetSignal={resetSignal} />
         <PriceWarSimulator inputs={inputs} resetSignal={resetSignal} />
         <ValueJustifier inputs={inputs} results={results} resetSignal={resetSignal} />
